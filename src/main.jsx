@@ -1,13 +1,16 @@
 import * as THREE from 'three';
 import Stats from 'three/addons/libs/stats.module.js';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { GUI } from 'https://cdn.skypack.dev/dat.gui';
 
 class InfiniteRoadCameraDemo {
   constructor() {
     this.segments = [];
     this.segmentLength = 50;
     this.cameraTravelDistance = 0;
-    this.proximityThreshold = 20; // Adjust the threshold as needed
+    this.proximityThreshold = 80; // Adjust the threshold as needed
+    this.isOverheadView = false;
+    this.isSideView = false; // New property for side view
 
     // Add targetX and targetY as class properties
     this.targetX = 0;
@@ -78,12 +81,16 @@ class InfiniteRoadCameraDemo {
 
     // Create the first segment to avoid "No segments found" error
     this.createSegment(0, 0, false);
+   // Add dat.GUI for view mode toggle
+    // Add dat.GUI for view mode toggles
+    const gui = new GUI();
+    gui.add(this, 'isOverheadView').name('Overhead View');
+    gui.add(this, 'isSideView').name('Side View');
   }
-
   createRoadSegment(segmentZ, lastRow) {
     const roadWidth = 100;
     const segmentDepth = this.segmentLength + 50;
-    const gridSize = 2; // Adjust this for the number of segments per road section
+    const gridSize = 50; // Adjust this for the number of segments per road section
 
     // Create an empty geometry for the grid
     const gridGeometry = new THREE.BufferGeometry();
@@ -159,28 +166,41 @@ class InfiniteRoadCameraDemo {
     // Add the segment to the scene
     this.scene.add(segment.floorMesh);
   }
-
   animate() {
-    const lerpSpeed = 0.05; // Speed for parallax movement
     const returnSpeed = 0.01; // Speed at which the camera returns to the average height
     const averageCameraHeight = 5; // Desired average camera height closer to the bottom
   
-    // Parallax movement
-    this.camera.position.x += (this.targetX - this.camera.position.x) * lerpSpeed;
-    this.camera.position.y += (this.targetY - this.camera.position.y) * lerpSpeed;
+    if (this.isOverheadView) {
+      // Set the camera to an overhead position and angle it down
+      this.camera.position.set(0, 50, this.camera.position.z);
+      this.camera.rotation.set(-Math.PI / 2, 0, 0); // Rotate the camera to look directly down
+    } else if (this.isSideView) {
+      // Set the camera to side view position, looking along the Z-axis
+      this.camera.position.set(50, 5, this.camera.position.z);
+      this.camera.rotation.set(0, Math.PI / 2, 0); // Rotate the camera to look along the Z-axis from the side
+    } else {
+      // Default view with parallax
+      const lerpSpeed = 0.05; // Speed for parallax movement
   
-    // Gradually return to the average height
-    this.camera.position.y += (averageCameraHeight - this.camera.position.y) * returnSpeed;
+      // Parallax movement for the default view
+      this.camera.position.x += (this.targetX - this.camera.position.x) * lerpSpeed;
+      this.camera.position.y += (this.targetY - this.camera.position.y) * lerpSpeed;
   
-    // Ensure camera does not go below the minimum Y position
-    const minY = 3; // Minimum Y position to avoid going through the ground
-    this.camera.position.y = Math.max(this.camera.position.y, minY);
+      // Gradually return to the average height
+      this.camera.position.y += (averageCameraHeight - this.camera.position.y) * returnSpeed;
   
-    // Move the camera straight along the Z-axis
-    this.camera.position.z -= this.pathSpeed; // Move the camera forward
+      // Ensure camera does not go below the minimum Y position
+      const minY = 3; // Minimum Y position to avoid going through the ground
+      this.camera.position.y = Math.max(this.camera.position.y, minY);
   
-    const lookAtPosition = new THREE.Vector3(this.camera.position.x, this.camera.position.y, this.camera.position.z - 1);
-    this.camera.lookAt(lookAtPosition);
+      // Reset rotation and set look-at for the default view
+      this.camera.rotation.set(0, 0, 0);
+      const lookAtPosition = new THREE.Vector3(this.camera.position.x, this.camera.position.y, this.camera.position.z - 1);
+      this.camera.lookAt(lookAtPosition);
+    }
+  
+    // Move the camera straight along the Z-axis for all views
+    this.camera.position.z -= this.pathSpeed;
   
     const lastSegmentZ = this.segments[this.segments.length - 1].floorMesh.position.z;
     const distanceToLastSegment = Math.abs(this.camera.position.z - lastSegmentZ);
@@ -198,8 +218,10 @@ class InfiniteRoadCameraDemo {
       }
     }
   
+    // Render the scene
     this.renderer.render(this.scene, this.camera);
   }
+  
   
 
     
