@@ -7,17 +7,13 @@ class InfiniteRoadCameraDemo {
     this.segments = [];
     this.segmentLength = 50;
     this.cameraTravelDistance = 0;
-    this.orbitEnabled = false;
-    this.proximityThreshold = 10; // Adjust the threshold as needed
+    this.proximityThreshold = 80; // Adjust the threshold as needed
 
     this.init();
-    this.setupInfiniteRoadPath();
     this.animate = this.animate.bind(this);
     this.renderer.setAnimationLoop(this.animate);
     window.addEventListener('resize', this.onWindowResize.bind(this));
     
-    // Add event listener to toggle orbit controls on 'o' key press
-    window.addEventListener('keydown', this.onKeyDown.bind(this));
   }
 
   init() {
@@ -60,216 +56,125 @@ class InfiniteRoadCameraDemo {
     this.clock = new THREE.Clock();
 
     // Path movement settings
-    this.pathSpeed = .2;
+    this.pathSpeed = .8;
     this.cameraHeight = 5;
 
-    // Initialize orbit controls
-    this.orbitControls = new OrbitControls(this.camera, this.renderer.domElement);
-    this.orbitControls.enabled = false; // Start with orbit controls disabled
-
+  
     // Create the first segment to avoid "No segments found" error
-    // this.createSegment(0, 0, false);
+    this.createSegment(0, 0, false);
   }
-
+  createRoadSegment(segmentZ, lastRow) {
+    const roadWidth = 150;
+    const segmentDepth = this.segmentLength + 50;
+    const gridSize = 20; // Adjust this for the number of segments per road section
+  
+    // Create an empty geometry for the grid
+    const gridGeometry = new THREE.BufferGeometry();
+    const vertices = [];
+  
+    // Generate vertices for the quad grid
+    for (let i = -roadWidth / 2; i <= roadWidth / 2; i += roadWidth / gridSize) {
+      // Vertical lines
+      vertices.push(i, 0, -segmentDepth / 2);
+      vertices.push(i, 0, segmentDepth / 2);
+    }
+    for (let j = -segmentDepth / 2; j <= segmentDepth / 2; j += segmentDepth / gridSize) {
+      // Horizontal lines
+      vertices.push(-roadWidth / 2, 0, j);
+      vertices.push(roadWidth / 2, 0, j);
+    }
+  
+    // Add vertices to the geometry
+    gridGeometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
+  
+    // Create a material for the grid
+    const gridMaterial = new THREE.LineBasicMaterial({
+      color: 0xf0cff0, // Neon pink color
+      linewidth: 1.5 // Adjust as needed
+    });
+  
+    // Create the grid as a LineSegments object
+    const gridHelper = new THREE.LineSegments(gridGeometry, gridMaterial);
+    gridHelper.position.set(0, 0.1, segmentZ); // Slightly above ground to prevent z-fighting
+  
+    return {
+      floorMesh: gridHelper,
+      lastRow: lastRow
+    };
+  }
+  
   addLighting() {
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    // Lower ambient light to keep a darker background
+    const ambientLight = new THREE.AmbientLight(0x330066, 0.1);
     this.scene.add(ambientLight);
-
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(50, 100, 50);
-    this.scene.add(directionalLight);
-
-    this.targetLight = new THREE.PointLight(0xff0000, 1, 50);
-    this.scene.add(this.targetLight);
-
-    this.lightHelper = new THREE.PointLightHelper(this.targetLight, 1);
-    this.scene.add(this.lightHelper);
+  
+    // Add colored directional lights to simulate neon lighting
+    // const neonLight1 = new THREE.PointLight(0xff00ff, 0.5, 100);
+    // neonLight1.position.set(20, 30, 10);
+    // this.scene.add(neonLight1);
+  
+    // const neonLight2 = new THREE.PointLight(0x00ffff, 0.5, 100);
+    // neonLight2.position.set(-20, 30, -10);
+    // this.scene.add(neonLight2);
   }
+  
+  
 
-  setupInfiniteRoadPath() {
-    // Create path points
-    this.pathPoints = [];
-    for (let i = 0; i < 2000; i++) {
-      const xOffset = Math.sin(i * 0.1) * 5;
-      this.pathPoints.push(new THREE.Vector3(xOffset, 0, -i * 10));
+  createSegment(lastSegmentZ, lastRow, extend = false) {
+    const segmentZ = lastSegmentZ - (this.segmentLength);
+
+    // Create a new road segment here and add it to the scene
+    const segment = this.createRoadSegment(segmentZ, lastRow);
+
+    // Ensure the segment has a floorMesh and other necessary properties
+    if (!segment || !segment.floorMesh) {
+      console.error('Failed to create segment or floorMesh is missing');
+      return;
     }
-    this.path = new THREE.CatmullRomCurve3(this.pathPoints, false);
 
-    // Create a line to visualize the path
-    const pathMaterial = new THREE.LineBasicMaterial({ color: 0x00ff00 }); // Green color for the path
-    const pathGeometry = new THREE.BufferGeometry().setFromPoints(this.path.getPoints(1000));
-    const pathLine = new THREE.Line(pathGeometry, pathMaterial);
-    this.scene.add(pathLine);
-
-    // Create the boxy tunnel
-    const tunnelMesh = this.createBoxyTunnel();
-    this.scene.add(tunnelMesh);
-
-    // Create the left wall
-    const leftWallMesh = this.createLeftWall();
-    this.scene.add(leftWallMesh);
-  }
-
-  onKeyDown(event) {
-    if (event.key === 'o') {
-      // Toggle orbit controls
-      this.orbitControls.enabled = !this.orbitControls.enabled;
+    if (extend) {
+      // If extending, modify the segment to continue the path further
+      segment.lastRow = lastRow + 1; // For example, increment the row number or update the geometry
     }
+
+    // Push the new segment to the array
+    this.segments.push(segment);
+
+    // Add the segment to the scene
+    this.scene.add(segment.floorMesh);
   }
-
-  createLeftWall() {
-    const tunnelHeight = 58; // Height of the wall
-    const wallThickness = 1; // Thickness of the wall
-
-    // Define the shape of the left wall
-    const wallShape = new THREE.Shape();
-    wallShape.moveTo(0, -tunnelHeight / 2);
-    wallShape.lineTo(0, tunnelHeight / 2);
-    wallShape.lineTo(wallThickness, tunnelHeight / 2);
-    wallShape.lineTo(wallThickness, -tunnelHeight / 2);
-    wallShape.closePath();
-
-    // Extrude the shape along the path
-    const extrudeSettings = {
-      steps: 500,
-      extrudePath: this.path,
-    };
-
-    const wallGeometry = new THREE.ExtrudeGeometry(wallShape, extrudeSettings);
-    const wallMaterial = new THREE.MeshStandardMaterial({
-      color: 0xfff444, // Yellow color
-      side: THREE.DoubleSide,
-      roughness: 0.8,
-      metalness: 0.1,
-      wireframe: true,
-
-    });
-
-    const wallMesh = new THREE.Mesh(wallGeometry, wallMaterial);
-    wallMesh.position.set(-7.5, 0, 0); // Offset the wall to the left
-
-    return wallMesh;
-  }
-
-  createBoxyTunnel() {
-    const tunnelWidth = 21; // Width of the tunnel
-    const tunnelHeight = 1; // Height of the tunnel
-
-    // Define the shape of the tunnel (rectangular cross-section)
-    const tunnelShape = new THREE.Shape();
-    tunnelShape.moveTo(-tunnelWidth / 2, -tunnelHeight / 2);
-    tunnelShape.lineTo(tunnelWidth / 2, -tunnelHeight / 2);
-    tunnelShape.lineTo(tunnelWidth / 2, tunnelHeight / 2);
-    tunnelShape.lineTo(-tunnelWidth / 2, tunnelHeight / 2);
-    tunnelShape.closePath();
-
-    // Extrude the shape along the path
-    const extrudeSettings = {
-      steps: 1000,
-      extrudePath: this.path,
-    };
-
-    const tunnelGeometry = new THREE.ExtrudeGeometry(tunnelShape, extrudeSettings);
-    const tunnelMaterial = new THREE.MeshStandardMaterial({
-      color: 0xfff444, // Yellow color
-      side: THREE.DoubleSide,
-      roughness: 0.8,
-      metalness: 0.1,
-      wireframe: true,
-    });
-
-    const tunnelMesh = new THREE.Mesh(tunnelGeometry, tunnelMaterial);
-    tunnelMesh.position.set(tunnelWidth / 1, tunnelHeight / 2 + 9, 0); // Adjust the '10' to your desired value
-
-    return tunnelMesh;
-  }
-
-  // Create road segment method
-  // createRoadSegment(segmentZ, lastRow) {
-  //   const roadWidth = 50; // Adjust the width of the road here
-  //   const geometry = new THREE.BoxGeometry(roadWidth, 1, this.segmentLength + 50); // Use roadWidth for the width of the road
-  //   const material = new THREE.MeshStandardMaterial({
-  //     color: 0x888888, // Grey for the road
-  //     roughness: 0.7,
-  //     metalness: 0.1
-  //   });
-
-  //   const floorMesh = new THREE.Mesh(geometry, material);
-  //   floorMesh.position.set(0, 0, segmentZ); // Position the road segment along the Z-axis
-
-  //   return {
-  //     floorMesh: floorMesh,
-  //     lastRow: lastRow
-  //   };
-  // }
-
-  // createSegment(lastSegmentZ, lastRow, extend = false) {
-  //   const segmentZ = lastSegmentZ - this.segmentLength;
-
-  //   // Create a new road segment here and add it to the scene
-  //   const segment = this.createRoadSegment(segmentZ, lastRow);
-
-  //   // Ensure the segment has a floorMesh and other necessary properties
-  //   if (!segment || !segment.floorMesh) {
-  //     console.error('Failed to create segment or floorMesh is missing');
-  //     return;
-  //   }
-
-  //   if (extend) {
-  //     // If extending, modify the segment to continue the path further
-  //     segment.lastRow = lastRow + 1; // For example, increment the row number or update the geometry
-  //   }
-
-  //   // Push the new segment to the array
-  //   this.segments.push(segment);
-
-  //   // Add the segment to the scene
-  //   this.scene.add(segment.floorMesh);
-  // }
 
   animate() {
-    if (!this.orbitControls.enabled) {
+
       const timeElapsed = this.clock.getElapsedTime();
-      const distanceTraveled = timeElapsed * this.pathSpeed;
+      // Move the camera straight along the Z-axis
+      this.camera.position.z -= this.pathSpeed; // Move the camera forward
+      this.camera.position.y = this.cameraHeight; // Keep the camera at a fixed height
   
-      // Calculate the path position based on the total distance traveled
-      const t = (distanceTraveled / this.segmentLength) % 1; // The value of t remains between 0 and 1
+      const lookAtPosition = new THREE.Vector3(this.camera.position.x, this.camera.position.y, this.camera.position.z - 1);
+      this.camera.lookAt(lookAtPosition);
   
-      if (this.path) {
-        const position = this.path.getPointAt(t); // Get the point on the path based on t
-        const lookAtPosition = this.path.getPointAt((t + 0.01) % 1); // Look slightly ahead of the current position
+      const lastSegmentZ = this.segments[this.segments.length - 1].floorMesh.position.z;
+      const distanceToLastSegment = Math.abs(this.camera.position.z - lastSegmentZ);
   
-        // Update camera position
-        this.camera.position.set(position.x, position.y + this.cameraHeight, position.z);
-        this.camera.lookAt(lookAtPosition);
+      if (distanceToLastSegment < this.proximityThreshold) {
+        // Add a new segment in front of the camera
+        this.createSegment(lastSegmentZ - this.segmentLength, this.segments[this.segments.length - 1].lastRow, true);
   
-        // Update light position to follow the camera
-        this.targetLight.position.copy(this.camera.position.clone().add(new THREE.Vector3(0, 0, -5)));
-        this.lightHelper.update();
-      }
-  
-      // Generate new road segments if the camera is near the end of the current segment
-      // const lastSegmentZ = this.segments[this.segments.length - 1].floorMesh.position.z;
-      // const distanceToLastSegment = Math.abs(this.camera.position.z - lastSegmentZ);
-  
-      // if (distanceToLastSegment < this.proximityThreshold) {
-      //   // Add a new segment in front of the camera
-      //   this.createSegment(lastSegmentZ - this.segmentLength, this.segments[this.segments.length - 1].lastRow, true);
-  
-      //   // If there are too many segments, remove the oldest one
-      //   if (this.segments.length > 10) {
-      //     const oldSegment = this.segments.shift();
-      //     if (oldSegment && oldSegment.floorMesh) {
-      //       this.scene.remove(oldSegment.floorMesh);
-      //     }
-      //   }
-      // }
-    } else {
-      this.orbitControls.update();
+        // If there are too many segments, remove the oldest one
+        if (this.segments.length > 10) {
+          const oldSegment = this.segments.shift();
+          if (oldSegment && oldSegment.floorMesh) {
+            this.scene.remove(oldSegment.floorMesh);
+          }
+        }
+ 
     }
   
     this.renderer.render(this.scene, this.camera);
   }
+  
+  
   
   onWindowResize() {
     this.camera.aspect = window.innerWidth / window.innerHeight;
