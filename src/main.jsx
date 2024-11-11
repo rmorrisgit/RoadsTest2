@@ -16,6 +16,8 @@ class InfiniteRoadCameraDemo {
     this.targetX = 0;
     this.targetY = 0;
 
+    this.objectsToCollect = [];
+
     this.init();
     this.animate = this.animate.bind(this);
     this.renderer.setAnimationLoop(this.animate);
@@ -52,6 +54,8 @@ class InfiniteRoadCameraDemo {
 
     // Add lights
     this.addLighting();
+    this.createKatamariBall();
+    this.addCollectibleObjects();
 
     // Create a clock for animation
     this.clock = new THREE.Clock();
@@ -128,23 +132,53 @@ class InfiniteRoadCameraDemo {
       floorMesh: gridHelper,
       lastRow: lastRow
     };
+
   }
-  
+
+
+  createKatamariBall() {
+    const ballGeometry = new THREE.SphereGeometry(1, 32, 32);
+    const ballMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
+    this.katamariBall = new THREE.Mesh(ballGeometry, ballMaterial);
+    this.katamariBall.position.set(0, 1, -5); // Initially place it slightly in front of the camera
+    this.scene.add(this.katamariBall);
+  }
+  addCollectibleObjects() {
+    for (let i = 0; i < 50; i++) {
+      const geometry = new THREE.BoxGeometry(0.5, 0.5, 0.5);
+      const material = new THREE.MeshStandardMaterial({ color: Math.random() * 0xffffff });
+      const object = new THREE.Mesh(geometry, material);
+      object.position.set(Math.random() * 40 - 20, 0.5, Math.random() * -200 - 10); // Placed along the Z-axis
+      this.scene.add(object);
+      this.objectsToCollect.push(object);
+    }
+  }
+
+  checkForCollisions() {
+    const ballRadius = this.katamariBall.geometry.parameters.radius;
+    this.objectsToCollect = this.objectsToCollect.filter((object) => {
+      const distance = this.katamariBall.position.distanceTo(object.position);
+      if (distance < ballRadius + 0.5) {
+        this.katamariBall.add(object);
+        object.position.set(
+          (Math.random() - 0.5) * ballRadius * 2,
+          (Math.random() - 0.5) * ballRadius * 2,
+          (Math.random() - 0.5) * ballRadius * 2
+        );
+        return false;
+      }
+      return true;
+    });
+  }
   
   addLighting() {
-    // Lower ambient light to keep a darker background
-    const ambientLight = new THREE.AmbientLight(0x330066, 0.1);
+    const ambientLight = new THREE.AmbientLight(0x404040, 1.5);
     this.scene.add(ambientLight);
-
-    // Add colored directional lights to simulate neon lighting
-    // const neonLight1 = new THREE.PointLight(0xff00ff, 0.5, 100);
-    // neonLight1.position.set(20, 30, 10);
-    // this.scene.add(neonLight1);
-
-    // const neonLight2 = new THREE.PointLight(0x00ffff, 0.5, 100);
-    // neonLight2.position.set(-20, 30, -10);
-    // this.scene.add(neonLight2);
+    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+    directionalLight.position.set(10, 20, 10).normalize();
+    this.scene.add(directionalLight);
   }
+
 
   createSegment(lastSegmentZ, lastRow, extend = false) {
     const segmentZ = lastSegmentZ - this.segmentLength;
@@ -188,7 +222,8 @@ class InfiniteRoadCameraDemo {
       const lookAtPosition = new THREE.Vector3(this.camera.position.x, this.camera.position.y, this.camera.position.z - 1);
       this.camera.lookAt(lookAtPosition);
     }
-  
+    this.katamariBall.position.set(this.camera.position.x, 1, this.camera.position.z - 5);
+
     // Move the camera straight along the Z-axis for all views
     this.camera.position.z -= this.pathSpeed;
   
@@ -208,7 +243,16 @@ class InfiniteRoadCameraDemo {
       }
     }
   
-    // Render the scene
+    // Rotate and move Katamari ball
+    this.katamariBall.rotation.x -= 0.02;
+    this.katamariBall.rotation.z -= 0.01;
+    this.katamariBall.position.z += 0.05;
+
+    // Check for collisions and grow Katamari ball
+    this.checkForCollisions();
+    const scaleFactor = 1 + (50 - this.objectsToCollect.length) * 0.02;
+    this.katamariBall.scale.set(scaleFactor, scaleFactor, scaleFactor);
+
     this.renderer.render(this.scene, this.camera);
   }
   
