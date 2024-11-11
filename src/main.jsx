@@ -6,9 +6,9 @@ import { GUI } from 'https://cdn.skypack.dev/dat.gui';
 class InfiniteRoadCameraDemo {
   constructor() {
     this.segments = [];
-    this.segmentLength = 100;
+    this.segmentLength = 50;
     this.cameraTravelDistance = 0;
-    this.proximityThreshold = 10; // Adjust the threshold as needed
+    this.proximityThreshold = 0.5; // Adjust the threshold as needed
     this.isOverheadView = false;
     this.isSideView = false; // New property for side view
 
@@ -64,7 +64,7 @@ class InfiniteRoadCameraDemo {
     this.clock = new THREE.Clock();
 
     // Path movement settings
-    this.pathSpeed = .4;
+    this.pathSpeed = .2;
     const parallaxAmount = 5; // Increase for more noticeable effect
 
 
@@ -92,8 +92,8 @@ class InfiniteRoadCameraDemo {
     gui.add(this, 'isSideView').name('Side View');
   }
   createRoadSegment(segmentZ, lastRow) {
-    const roadWidth = 200; // Total width of the road
-    const segmentDepth = this.segmentLength + 100; // Total depth of the road segment
+    const roadWidth = 400; // Total width of the road
+    const segmentDepth = this.segmentLength + 50; // Total depth of the road segment
     const stepSize = 5; // Decreased step size for more squares (must divide evenly into roadWidth and segmentDepth)
   
     // Ensure that roadWidth and segmentDepth are divisible by stepSize
@@ -188,7 +188,7 @@ class InfiniteRoadCameraDemo {
     } else {
       // Default view with parallax
       this.camera.position.x += (this.targetX - this.camera.position.x) * lerpSpeed;
-      this.camera.position.y += (this.targetY - this.camera.position.y) * lerpSpeed;
+      this.camera.position.y += (this.targetY - this.camera.position.y + 2) * lerpSpeed;
   
       // Remove the minimum Y constraint for full vertical movement range
       this.camera.rotation.set(0, 0, 0);
