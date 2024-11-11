@@ -94,7 +94,7 @@ class InfiniteRoadCameraDemo {
   createRoadSegment(segmentZ, lastRow) {
     const roadWidth = 200; // Total width of the road
     const segmentDepth = this.segmentLength + 100; // Total depth of the road segment
-    const stepSize = 10; // Decreased step size for more squares (must divide evenly into roadWidth and segmentDepth)
+    const stepSize = 5; // Decreased step size for more squares (must divide evenly into roadWidth and segmentDepth)
   
     // Ensure that roadWidth and segmentDepth are divisible by stepSize
     if (roadWidth % stepSize !== 0 || segmentDepth % stepSize !== 0) {
