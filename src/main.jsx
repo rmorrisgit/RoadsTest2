@@ -8,7 +8,7 @@ class InfiniteRoadCameraDemo {
     this.segments = [];
     this.segmentLength = 100;
     this.cameraTravelDistance = 0;
-    this.proximityThreshold = 20; // Adjust the threshold as needed
+    this.proximityThreshold = 10; // Adjust the threshold as needed
     this.isOverheadView = false;
     this.isSideView = false; // New property for side view
 
@@ -64,7 +64,7 @@ class InfiniteRoadCameraDemo {
     this.clock = new THREE.Clock();
 
     // Path movement settings
-    this.pathSpeed = .125;
+    this.pathSpeed = .4;
     const parallaxAmount = 5; // Increase for more noticeable effect
 
 
@@ -92,22 +92,27 @@ class InfiniteRoadCameraDemo {
     gui.add(this, 'isSideView').name('Side View');
   }
   createRoadSegment(segmentZ, lastRow) {
-    const roadWidth = 200;
-    const segmentDepth = this.segmentLength + 100;
-    const gridSize = 62; // Adjust this for the number of segments per road section
+    const roadWidth = 200; // Total width of the road
+    const segmentDepth = this.segmentLength + 100; // Total depth of the road segment
+    const stepSize = 10; // Decreased step size for more squares (must divide evenly into roadWidth and segmentDepth)
+  
+    // Ensure that roadWidth and segmentDepth are divisible by stepSize
+    if (roadWidth % stepSize !== 0 || segmentDepth % stepSize !== 0) {
+      console.warn('roadWidth and segmentDepth should be divisible by stepSize for even squares');
+    }
   
     // Create an empty geometry for the grid
     const gridGeometry = new THREE.BufferGeometry();
     const vertices = [];
   
-    // Generate vertices for the quad grid
-    for (let i = -roadWidth / 2; i <= roadWidth / 2; i += roadWidth / gridSize) {
-      // Vertical lines
+    // Generate vertical lines
+    for (let i = -roadWidth / 2; i <= roadWidth / 2; i += stepSize) {
       vertices.push(i, 0, -segmentDepth / 2);
       vertices.push(i, 0, segmentDepth / 2);
     }
-    for (let j = -segmentDepth / 2; j <= segmentDepth / 2; j += segmentDepth / gridSize) {
-      // Horizontal lines
+  
+    // Generate horizontal lines
+    for (let j = -segmentDepth / 2; j <= segmentDepth / 2; j += stepSize) {
       vertices.push(-roadWidth / 2, 0, j);
       vertices.push(roadWidth / 2, 0, j);
     }
@@ -115,12 +120,9 @@ class InfiniteRoadCameraDemo {
     // Add vertices to the geometry
     gridGeometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
   
-    // Generate a random color for the segment
-    const randomColor = Math.random() * 0xffffff;
-  
-    // Create a material for the grid with the random color
+    // Create a material for the grid with a color
     const gridMaterial = new THREE.LineBasicMaterial({
-      color: randomColor,
+      color: 0xfff00,
       linewidth: 1.5 // Adjust as needed
     });
   
@@ -134,6 +136,7 @@ class InfiniteRoadCameraDemo {
       lastRow: lastRow
     };
   }
+  
   
   addLighting() {
     // Lower ambient light to keep a darker background
