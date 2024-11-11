@@ -8,7 +8,7 @@ class InfiniteRoadCameraDemo {
     this.segments = [];
     this.segmentLength = 50;
     this.cameraTravelDistance = 0;
-    this.proximityThreshold = 0.5; // Adjust the threshold as needed
+    this.proximityThreshold = 1.5; // Adjust the threshold as needed
     this.isOverheadView = false;
     this.isSideView = false; // New property for side view
 
@@ -27,15 +27,8 @@ class InfiniteRoadCameraDemo {
   // Add fog to the scene
 
   // Set up the skybox
-  const textureLoader = new THREE.CubeTextureLoader();
-  this.scene.background = textureLoader.load([
-    'resources/skybox/Cold_Sunset__Cam_2_Left+X.png',
-    'resources/skybox/Cold_Sunset__Cam_3_Right-X.png',
-    'resources/skybox/Cold_Sunset__Cam_4_Up+Y.png',
-    'resources/skybox/Cold_Sunset__Cam_5_Down-Y.png',
-    'resources/skybox/Cold_Sunset__Cam_0_Front+Z.png',
-    'resources/skybox/Cold_Sunset__Cam_1_Back-Z.png'
-  ]);
+  this.scene.background = new THREE.Color(0x000000); // Set the background to black
+
 
 
     // Set up camera
@@ -64,8 +57,8 @@ class InfiniteRoadCameraDemo {
     this.clock = new THREE.Clock();
 
     // Path movement settings
-    this.pathSpeed = .2;
-    const parallaxAmount = 5; // Increase for more noticeable effect
+    this.pathSpeed = .16;
+    const parallaxAmount = 4; // Increase for more noticeable effect
 
 
     // Add event listener for mouse movement for parallax effect
@@ -122,7 +115,7 @@ class InfiniteRoadCameraDemo {
   
     // Create a material for the grid with a color
     const gridMaterial = new THREE.LineBasicMaterial({
-      color: 0xfff00,
+      color: 0xffcc0,
       linewidth: 1.5 // Adjust as needed
     });
   
@@ -180,7 +173,7 @@ class InfiniteRoadCameraDemo {
     const lerpSpeed = 0.05; // Speed for parallax movement
   
     if (this.isOverheadView) {
-      this.camera.position.set(0, 50, this.camera.position.z);
+      this.camera.position.set(0, 120, this.camera.position.z);
       this.camera.rotation.set(-Math.PI / 2, 0, 0);
     } else if (this.isSideView) {
       this.camera.position.set(50, 5, this.camera.position.z);
