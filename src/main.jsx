@@ -8,7 +8,7 @@ class InfiniteRoadCameraDemo {
     this.segments = [];
     this.segmentLength = 50;
     this.cameraTravelDistance = 0;
-    this.proximityThreshold = 80; // Adjust the threshold as needed
+    this.proximityThreshold = 20; // Adjust the threshold as needed
     this.isOverheadView = false;
     this.isSideView = false; // New property for side view
 
@@ -25,16 +25,7 @@ class InfiniteRoadCameraDemo {
   init() {
     this.scene = new THREE.Scene();
 
-    // Set up the skybox
-    const textureLoader = new THREE.CubeTextureLoader();
-    this.scene.background = textureLoader.load([
-      'resources/skybox/Cold_Sunset__Cam_2_Left+X.png',
-      'resources/skybox/Cold_Sunset__Cam_3_Right-X.png',
-      'resources/skybox/Cold_Sunset__Cam_4_Up+Y.png',
-      'resources/skybox/Cold_Sunset__Cam_5_Down-Y.png',
-      'resources/skybox/Cold_Sunset__Cam_0_Front+Z.png',
-      'resources/skybox/Cold_Sunset__Cam_1_Back-Z.png'
-    ]);
+    this.scene.background = new THREE.Color(0x000000); // Set the background to black
 
     // Set up camera
     this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
@@ -43,7 +34,7 @@ class InfiniteRoadCameraDemo {
     const near = 1.0;
     const far = 1000.0;
     this.camera_ = new THREE.PerspectiveCamera(fov, aspect, near, far);
-    this.camera_.position.set(0, 2, 0);
+    this.camera_.position.set(0, 0, 0);
 
     // Set up renderer
     this.renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -62,21 +53,23 @@ class InfiniteRoadCameraDemo {
     this.clock = new THREE.Clock();
 
     // Path movement settings
-    this.pathSpeed = .4;
-    const parallaxAmount = 13; // Increase for more noticeable effect
+    this.pathSpeed = .125;
+    const parallaxAmount = 5; // Increase for more noticeable effect
 
 
     // Add event listener for mouse movement for parallax effect
     window.addEventListener('mousemove', (event) => {
       const mouseX = (event.clientX / window.innerWidth) * 2 - 1;
-      const mouseY = (event.clientY / window.innerHeight) * 2 - 1;
-
+      
+      // Normalize Y to be 0 at the bottom and 1 at the top
+      const normalizedY = 1 - (event.clientY / window.innerHeight); // 0 at the bottom, 1 at the top
+    
+      // Correct the `targetY` calculation to move the camera up when the cursor moves up
+      this.targetY = normalizedY * parallaxAmount; // Positive `normalizedY` moves the camera up
+    
       this.targetX = mouseX * parallaxAmount;
-      this.targetY = -mouseY * parallaxAmount;
-
+    
       console.log('Target X:', this.targetX, 'Target Y:', this.targetY); // Debugging log
-    
-    
     });
 
     // Create the first segment to avoid "No segments found" error
@@ -90,7 +83,7 @@ class InfiniteRoadCameraDemo {
   createRoadSegment(segmentZ, lastRow) {
     const roadWidth = 100;
     const segmentDepth = this.segmentLength + 50;
-    const gridSize = 50; // Adjust this for the number of segments per road section
+    const gridSize = 32; // Adjust this for the number of segments per road section
 
     // Create an empty geometry for the grid
     const gridGeometry = new THREE.BufferGeometry();
@@ -113,7 +106,8 @@ class InfiniteRoadCameraDemo {
 
     // Create a material for the grid
     const gridMaterial = new THREE.LineBasicMaterial({
-      color: 0x00FFFF, // Neon pink color
+      color: 0x04D9FF
+      , // Neon pink color
       linewidth: 1.5 // Adjust as needed
     });
 
@@ -167,33 +161,20 @@ class InfiniteRoadCameraDemo {
     this.scene.add(segment.floorMesh);
   }
   animate() {
-    const returnSpeed = 0.01; // Speed at which the camera returns to the average height
-    const averageCameraHeight = 5; // Desired average camera height closer to the bottom
+    const lerpSpeed = 0.05; // Speed for parallax movement
   
     if (this.isOverheadView) {
-      // Set the camera to an overhead position and angle it down
       this.camera.position.set(0, 50, this.camera.position.z);
-      this.camera.rotation.set(-Math.PI / 2, 0, 0); // Rotate the camera to look directly down
+      this.camera.rotation.set(-Math.PI / 2, 0, 0);
     } else if (this.isSideView) {
-      // Set the camera to side view position, looking along the Z-axis
       this.camera.position.set(50, 5, this.camera.position.z);
-      this.camera.rotation.set(0, Math.PI / 2, 0); // Rotate the camera to look along the Z-axis from the side
+      this.camera.rotation.set(0, Math.PI / 2, 0);
     } else {
       // Default view with parallax
-      const lerpSpeed = 0.05; // Speed for parallax movement
-  
-      // Parallax movement for the default view
       this.camera.position.x += (this.targetX - this.camera.position.x) * lerpSpeed;
       this.camera.position.y += (this.targetY - this.camera.position.y) * lerpSpeed;
   
-      // Gradually return to the average height
-      this.camera.position.y += (averageCameraHeight - this.camera.position.y) * returnSpeed;
-  
-      // Ensure camera does not go below the minimum Y position
-      const minY = 3; // Minimum Y position to avoid going through the ground
-      this.camera.position.y = Math.max(this.camera.position.y, minY);
-  
-      // Reset rotation and set look-at for the default view
+      // Remove the minimum Y constraint for full vertical movement range
       this.camera.rotation.set(0, 0, 0);
       const lookAtPosition = new THREE.Vector3(this.camera.position.x, this.camera.position.y, this.camera.position.z - 1);
       this.camera.lookAt(lookAtPosition);
