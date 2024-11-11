@@ -6,7 +6,7 @@ import { GUI } from 'https://cdn.skypack.dev/dat.gui';
 class InfiniteRoadCameraDemo {
   constructor() {
     this.segments = [];
-    this.segmentLength = 50;
+    this.segmentLength = 100;
     this.cameraTravelDistance = 0;
     this.proximityThreshold = 20; // Adjust the threshold as needed
     this.isOverheadView = false;
@@ -24,8 +24,19 @@ class InfiniteRoadCameraDemo {
 
   init() {
     this.scene = new THREE.Scene();
+  // Add fog to the scene
 
-    this.scene.background = new THREE.Color(0x000000); // Set the background to black
+  // Set up the skybox
+  const textureLoader = new THREE.CubeTextureLoader();
+  this.scene.background = textureLoader.load([
+    'resources/skybox/Cold_Sunset__Cam_2_Left+X.png',
+    'resources/skybox/Cold_Sunset__Cam_3_Right-X.png',
+    'resources/skybox/Cold_Sunset__Cam_4_Up+Y.png',
+    'resources/skybox/Cold_Sunset__Cam_5_Down-Y.png',
+    'resources/skybox/Cold_Sunset__Cam_0_Front+Z.png',
+    'resources/skybox/Cold_Sunset__Cam_1_Back-Z.png'
+  ]);
+
 
     // Set up camera
     this.camera = new THREE.PerspectiveCamera(60, window.innerWidth / window.innerHeight, 1, 1000);
@@ -81,14 +92,14 @@ class InfiniteRoadCameraDemo {
     gui.add(this, 'isSideView').name('Side View');
   }
   createRoadSegment(segmentZ, lastRow) {
-    const roadWidth = 100;
-    const segmentDepth = this.segmentLength + 50;
-    const gridSize = 32; // Adjust this for the number of segments per road section
-
+    const roadWidth = 200;
+    const segmentDepth = this.segmentLength + 100;
+    const gridSize = 62; // Adjust this for the number of segments per road section
+  
     // Create an empty geometry for the grid
     const gridGeometry = new THREE.BufferGeometry();
     const vertices = [];
-
+  
     // Generate vertices for the quad grid
     for (let i = -roadWidth / 2; i <= roadWidth / 2; i += roadWidth / gridSize) {
       // Vertical lines
@@ -100,28 +111,30 @@ class InfiniteRoadCameraDemo {
       vertices.push(-roadWidth / 2, 0, j);
       vertices.push(roadWidth / 2, 0, j);
     }
-
+  
     // Add vertices to the geometry
     gridGeometry.setAttribute('position', new THREE.Float32BufferAttribute(vertices, 3));
-
-    // Create a material for the grid
+  
+    // Generate a random color for the segment
+    const randomColor = Math.random() * 0xffffff;
+  
+    // Create a material for the grid with the random color
     const gridMaterial = new THREE.LineBasicMaterial({
-      color: 0x04D9FF
-      , // Neon pink color
+      color: randomColor,
       linewidth: 1.5 // Adjust as needed
     });
-
+  
     // Create the grid as a LineSegments object
     const gridHelper = new THREE.LineSegments(gridGeometry, gridMaterial);
     gridHelper.position.set(0, 0.1, segmentZ); // Slightly above ground to prevent z-fighting
     gridHelper.frustumCulled = true;
-
+  
     return {
       floorMesh: gridHelper,
       lastRow: lastRow
     };
   }
-
+  
   addLighting() {
     // Lower ambient light to keep a darker background
     const ambientLight = new THREE.AmbientLight(0x330066, 0.1);
