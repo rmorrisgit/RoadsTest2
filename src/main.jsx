@@ -7,7 +7,7 @@ class InfiniteRoadCameraDemo {
     this.segments = [];
     this.segmentLength = 50;
     this.cameraTravelDistance = 0;
-    this.proximityThreshold = 80; // Adjust the threshold as needed
+    this.proximityThreshold = 20; // Adjust the threshold as needed
 
     this.init();
     this.animate = this.animate.bind(this);
@@ -56,8 +56,8 @@ class InfiniteRoadCameraDemo {
     this.clock = new THREE.Clock();
 
     // Path movement settings
-    this.pathSpeed = .8;
-    this.cameraHeight = 5;
+    this.pathSpeed = .3;
+    this.cameraHeight = 8;
 
   
     // Create the first segment to avoid "No segments found" error
@@ -89,7 +89,7 @@ class InfiniteRoadCameraDemo {
   
     // Create a material for the grid
     const gridMaterial = new THREE.LineBasicMaterial({
-      color: 0xf0cff0, // Neon pink color
+      color: 0x00FFFF, // Neon pink color
       linewidth: 1.5 // Adjust as needed
     });
   
