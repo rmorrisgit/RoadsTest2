@@ -57,7 +57,7 @@ class InfiniteRoadCameraDemo {
     this.clock = new THREE.Clock();
 
     // Path movement settings
-    this.pathSpeed = .16;
+    this.pathSpeed = .11;
     const parallaxAmount = 4; // Increase for more noticeable effect
 
 
@@ -87,7 +87,7 @@ class InfiniteRoadCameraDemo {
   createRoadSegment(segmentZ, lastRow) {
     const roadWidth = 400; // Total width of the road
     const segmentDepth = this.segmentLength + 50; // Total depth of the road segment
-    const stepSize = 5; // Decreased step size for more squares (must divide evenly into roadWidth and segmentDepth)
+    const stepSize = 20; // Decreased step size for more squares (must divide evenly into roadWidth and segmentDepth)
   
     // Ensure that roadWidth and segmentDepth are divisible by stepSize
     if (roadWidth % stepSize !== 0 || segmentDepth % stepSize !== 0) {
@@ -97,13 +97,11 @@ class InfiniteRoadCameraDemo {
     // Create an empty geometry for the grid
     const gridGeometry = new THREE.BufferGeometry();
     const vertices = [];
-  
-    // Generate vertical lines
+    // vertical lines
     for (let i = -roadWidth / 2; i <= roadWidth / 2; i += stepSize) {
       vertices.push(i, 0, -segmentDepth / 2);
       vertices.push(i, 0, segmentDepth / 2);
     }
-  
     // Generate horizontal lines
     for (let j = -segmentDepth / 2; j <= segmentDepth / 2; j += stepSize) {
       vertices.push(-roadWidth / 2, 0, j);
@@ -173,7 +171,7 @@ class InfiniteRoadCameraDemo {
     const lerpSpeed = 0.05; // Speed for parallax movement
   
     if (this.isOverheadView) {
-      this.camera.position.set(0, 120, this.camera.position.z);
+      this.camera.position.set(0, 220, this.camera.position.z);
       this.camera.rotation.set(-Math.PI / 2, 0, 0);
     } else if (this.isSideView) {
       this.camera.position.set(50, 5, this.camera.position.z);
